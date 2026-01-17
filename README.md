@@ -121,7 +121,9 @@ python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        --expansion_factor 8 --epochs 30 MSAE_UW -a ""
 ```
 
-**NOTE**: Models trained for our paper can be downloaded from this huggingface repository: [Matryoshka SAE Models](https://huggingface.co/WolodjaZ/MSAE). We plan to also add all trained SAE from other tested architectures, so please check the repository for updates.
+**NOTE**: Models trained for our paper can be downloaded from this huggingface repository: [Matryoshka SAE Models](https://huggingface.co/WolodjaZ/MSAE).
+
+**🚨IMPORTANT🚨**: The models hosted on Hugging Face have been retrained without the mentioned bug. Consequently, the results may differ from the paper.
 
 ## Notes on Model Training
 
