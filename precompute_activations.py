@@ -269,7 +269,7 @@ class KAGLDataset(HFDataset):
         """Return preprocessed image and caption pairs."""
         try:
             item = self.dataset[idx]
-            sample, target = item['jpg'], item['text']
+            sample, target = item['image'], item['text']
             if isinstance(sample, Image.Image):
                 sample = sample.convert("RGB")
 

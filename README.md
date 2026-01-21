@@ -68,7 +68,7 @@ python precompute_activations.py -d imagenet -m RN50
 ```
 
 ```bash
-# Fashion-CLIP with KAGL
+# Fashion-CLIP with KAGL train split
 python precompute_activations.py -d KAGL -m Fashion-CLIP
 
 ```
