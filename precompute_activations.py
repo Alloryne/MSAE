@@ -255,11 +255,15 @@ class KAGLDataset(HFDataset):
         preprocess (callable): Image preprocessing function
         download_full (bool): Whether to download the full dataset at once
     """
-    def __init__(self, preprocess, download_full=False):
-        download_full = True
-        super().__init__("Marqo/KAGL", preprocess, 'data', download_full)
-        # Hardcoded dataset sizes since they're not always available from the API
-        self.len = 44434
+    def __init__(self, preprocess, split, download_full=False):
+        stream = not download_full
+        stream = False
+        self.preprocess = preprocess
+        self.len: int = 44434
+        base = load_dataset("Marqo/KAGL", split="data", streaming=stream, trust_remote_code=True)
+        splits = base.train_test_split(test_size=0.1, seed=42)
+        self.dataset = splits['train'] if split == 'train' else splits["test"]
+
 
     def __getitem__(self, idx):
         """Return preprocessed image and caption pairs."""
@@ -412,7 +416,7 @@ def load_data(dataset, preprocess, train=False):
     elif dataset == "cc3m":
         dataset = CC3MDataset(preprocess, "train" if train else "validation")
     elif dataset == "KAGL":
-        dataset = KAGLDataset(preprocess)
+        dataset = KAGLDataset(preprocess, "train" if train else "validation")
     elif dataset == "celeba":
         dataset = CelebAMy(download=True, split="train" if train else "test", 
                           transform=preprocess, target_type="attr")
