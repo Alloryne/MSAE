@@ -8,6 +8,7 @@ from tqdm import tqdm
 from PIL import Image
 
 import clip
+from transformers import CLIPModel, CLIPProcessor
 from datasets import load_dataset
 from torch.utils.data import Dataset
 from torchvision.datasets import CelebA
@@ -28,6 +29,7 @@ SUPPORTED_MODELS = [
     "ViT-B~16",
     "RN50",
     "ViT-L~14",
+    "Fashion-CLIP"
 ]
 
 # Supported image datasets
@@ -35,6 +37,7 @@ SUPPORTED_DATASETS = [
     "imagenet",
     "cc3m",
     "celeba",
+    "KAGL"
 ]
 
 # Supported text vocabulary sources with their file paths
@@ -242,6 +245,35 @@ class CC3MDataset(HFDataset):
         except (UnicodeDecodeError, OSError, SyntaxError) as e:
             return None, None 
 
+class KAGLDataset(HFDataset):
+    """
+    Wrapper for the KAGL fashion dataset.
+
+    Handles KAGL-specific data format and preprocessing.
+
+    Args:
+        preprocess (callable): Image preprocessing function
+        download_full (bool): Whether to download the full dataset at once
+    """
+    def __init__(self, preprocess, download_full=False):
+        download_full = True
+        super().__init__("Marqo/KAGL", preprocess, 'data', download_full)
+        # Hardcoded dataset sizes since they're not always available from the API
+        self.len = 44434
+
+    def __getitem__(self, idx):
+        """Return preprocessed image and caption pairs."""
+        try:
+            item = self.dataset[idx]
+            sample, target = item['jpg'], item['text']
+            if isinstance(sample, Image.Image):
+                sample = sample.convert("RGB")
+
+            if self.preprocess:
+                sample = self.preprocess(sample)
+            return sample, target
+        except (UnicodeDecodeError, OSError, SyntaxError) as e:
+            return None, None
 
 class EmbeddingExtractor:
     """
@@ -287,7 +319,11 @@ class EmbeddingExtractor:
         model_name = model_name.replace("~", "/")
         
         # Load the model and preprocessor
-        model, preprocessor = clip.load(model_name, device=device, download_root=model_path)
+        if model_name == 'Fashion-CLIP':
+            model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
+            preprocessor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+        else:
+            model, preprocessor = clip.load(model_name, device=device, download_root=model_path)
         
         # Create a tokenizer that truncates by default
         original_tokenizer = clip.tokenize
@@ -375,6 +411,8 @@ def load_data(dataset, preprocess, train=False):
         dataset = ImageNetDataset(preprocess, "train" if train else "validation")
     elif dataset == "cc3m":
         dataset = CC3MDataset(preprocess, "train" if train else "validation")
+    elif dataset == "KAGL":
+        dataset = KAGLDataset(preprocess)
     elif dataset == "celeba":
         dataset = CelebAMy(download=True, split="train" if train else "test", 
                           transform=preprocess, target_type="attr")

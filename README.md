@@ -67,6 +67,12 @@ python precompute_activations.py -d imagenet -m ViT-B~32 -s
 python precompute_activations.py -d imagenet -m RN50
 ```
 
+```bash
+# Fashion-CLIP with KAGL
+python precompute_activations.py -d KAGL -m Fashion-CLIP
+
+```
+
 Additionally, to precompute the vocabularies, we utilize vocabs from [SpLiCE](https://github.com/AI4LIFE-GROUP/SpLiCE) and [Discover-then-Name](https://github.com/neuroexplicit-saar/Discover-then-Name). These are stored in the `vocab` directory. Run the following commands:
 
 ```bash
@@ -115,6 +121,13 @@ python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        --expansion_factor 8 --epochs 30 MSAE_RW -a ""
 
 # Trained on CC3M with ViT-L~14, 30 epochs, expansion factor 8 (768*8), Matryoshka SAE (UW)
+python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+       -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
+       -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
+       --expansion_factor 8 --epochs 30 MSAE_UW -a ""
+```
+
+```bash
 python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
