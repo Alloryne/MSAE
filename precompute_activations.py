@@ -405,7 +405,12 @@ class EmbeddingExtractor:
 
         # Extract features with mixed precision
         with torch.no_grad(), torch.cuda.amp.autocast():
-            image_features = self.model.encode_image(img)
+            if isinstance(self.model, CLIPModel):
+                # Hugging Face CLIP / Fashion-CLIP
+                image_features = self.model.get_image_features(pixel_values=img)
+            else:
+                # OpenAI CLIP
+                image_features = self.model.encode_image(img)
 
         return image_features, img.detach().cpu()
 
