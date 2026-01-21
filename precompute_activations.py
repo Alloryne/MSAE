@@ -607,40 +607,45 @@ def main(args):
             collate_fn=safe_collate
         )
 
+        num_samples = image_memmap.shape[0]
+
         logger.info("Extracting embeddings...")
         start_idx = 0
         successful_count = 0
-        for images, texts in tqdm(dl, total=len(dl), desc="Extracting embeddings"):
+        for images, texts in tqdm(dl, desc="Extracting embeddings"):
+
+            if start_idx >= num_samples:
+                break
+
             if images is None and texts is None:
                 continue
 
-            # Calculate batch indices
-            end_idx = start_idx + len(images if images is not None else texts)
+            batch_size = len(images if images is not None else texts)
+            end_idx = min(start_idx + batch_size, num_samples)
 
-            # Extract and save image embeddings
+            # ---- image embeddings ----
             if images is not None:
-                image_embeddings, _ = extractor.embed_image(images)
-                image_memmap[start_idx:end_idx] = image_embeddings.detach().cpu().numpy().astype(np.float32)
+                image_embeddings, _ = extractor.embed_image(images[: end_idx - start_idx])
+                image_memmap[start_idx:end_idx] = (
+                    image_embeddings.detach().cpu().numpy().astype(np.float32)
+                )
                 image_memmap.flush()
 
-            # Extract and save text embeddings
+            # ---- text embeddings ----
             if texts is not None:
-
-                # Convert numerical class indices to text labels if needed
                 texts = list(texts)
-                if isinstance(texts, list) and isinstance(texts[0], int):
+                if isinstance(texts[0], int):
                     texts = [dataset.idx_to_class[x] for x in texts]
 
-                text_embeddings, _ = extractor.embed_text(texts)
-                text_memmap[start_idx:end_idx] = text_embeddings.detach().cpu().numpy().astype(np.float32)
+                text_embeddings, _ = extractor.embed_text(texts[: end_idx - start_idx])
+                text_memmap[start_idx:end_idx] = (
+                    text_embeddings.detach().cpu().numpy().astype(np.float32)
+                )
                 text_memmap.flush()
+                text_full.extend(texts[: end_idx - start_idx])
 
-                # Collect original text
-                text_full.extend(texts)
-
-            # Update indices for next batch
             start_idx = end_idx
-            successful_count += len(images if images is not None else texts)
+            successful_count += (end_idx - start_idx)
 
         # Save original text to file
         with open(text_output_path, 'w') as f:
