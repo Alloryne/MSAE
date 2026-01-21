@@ -67,18 +67,18 @@ def parse_args() -> argparse.Namespace:
         argparse.Namespace: Parsed command line arguments
     """
     parser = argparse.ArgumentParser(description="Extract embeddings from the dataset")
-    parser.add_argument("-d", "--dataset", type=str, required=True, 
-                       help="Dataset to use (one of: imagenet, cc3m, celeba, or a supported vocabulary)")
-    parser.add_argument("-m", "--model", type=str, required=True, 
-                       help="CLIP model variant to use (e.g., 'ViT-B~32' for 'ViT-B/32')")
-    parser.add_argument("-b", "--batch-size", type=int, default=4096, 
-                       help="Batch size for embedding extraction")
-    parser.add_argument("-s", "--train-split", action="store_true", 
-                       help="Use training split instead of validation/test split")
-    parser.add_argument("-v", "--vocab-size", type=int, default=-1, 
-                       help="Vocabulary size limit (-1 for full vocabulary)")
-    parser.add_argument("-w", "--workers", type=int, default=12, 
-                       help="Number of workers for data loading")
+    parser.add_argument("-d", "--dataset", type=str, required=True,
+                        help="Dataset to use (one of: imagenet, cc3m, celeba, or a supported vocabulary)")
+    parser.add_argument("-m", "--model", type=str, required=True,
+                        help="CLIP model variant to use (e.g., 'ViT-B~32' for 'ViT-B/32')")
+    parser.add_argument("-b", "--batch-size", type=int, default=4096,
+                        help="Batch size for embedding extraction")
+    parser.add_argument("-s", "--train-split", action="store_true",
+                        help="Use training split instead of validation/test split")
+    parser.add_argument("-v", "--vocab-size", type=int, default=-1,
+                        help="Vocabulary size limit (-1 for full vocabulary)")
+    parser.add_argument("-w", "--workers", type=int, default=12,
+                        help="Number of workers for data loading")
     return parser.parse_args()
 
 
@@ -92,17 +92,18 @@ class VocabDataset(Dataset):
     Args:
         data (list): List of vocabulary items (strings)
     """
+
     def __init__(self, data):
         self.data = data
-    
+
     def __getitem__(self, index):
         """Yield vocabulary items with None as placeholder for images."""
         return None, self.data[index]
-    
+
     def __len__(self):
         """Return the number of vocabulary items."""
         return len(self.data)
-    
+
     def __add__(self, other):
         """Concatenate two VocabDataset instances."""
         if isinstance(other, VocabDataset):
@@ -123,10 +124,11 @@ class CelebAMy(Dataset):
         split (str): Dataset split ('train', 'valid', or 'test')
         **kwargs: Additional arguments to pass to CelebA constructor
     """
+
     def __init__(self, root, split, **kwargs):
         self.celeba = CelebA(root, split=split, **kwargs)
         self.attr_names = self.celeba.attr_names[:40]  # Using first 40 attributes
-    
+
     def __getitem__(self, index):
         """Yield image samples with concatenated attribute labels as text."""
         sample, target = self.celeba[index]
@@ -135,7 +137,7 @@ class CelebAMy(Dataset):
         # Convert attribute indices to attribute names and join with commas
         target = ','.join([str(self.attr_names[x]) for x in labels_by_target])
         return sample, target
-    
+
     def __len__(self):
         """Return the number of samples in the dataset."""
         return len(self.celeba)
@@ -155,17 +157,18 @@ class HFDataset(Dataset):
         download_full (bool): Whether to download the full dataset at once or stream it
         **kwargs: Additional arguments to pass to load_dataset
     """
+
     def __init__(self, dataset, preprocess, split, download_full=False, **kwargs):
         stream = not download_full
-        self.dataset = load_dataset(dataset, split=split, streaming=stream, 
+        self.dataset = load_dataset(dataset, split=split, streaming=stream,
                                     trust_remote_code=True, **kwargs)
         self.preprocess = preprocess
         self.len: int = 0  # Will be set by child classes
-    
+
     def __len__(self):
         """Return the number of samples in the dataset."""
         return self.len
-    
+
     def __getitem__(self, idx):
         """Get a single sample from the dataset."""
         item = self.dataset[idx]
@@ -185,6 +188,7 @@ class ImageNetDataset(HFDataset):
         preprocess (callable): Image preprocessing function
         split (str): Dataset split to use ('train' or 'validation')
     """
+
     def __init__(self, preprocess, split):
         super().__init__("ILSVRC/imagenet-1k", preprocess, split, True)
         # Set dataset length based on split info
@@ -193,7 +197,7 @@ class ImageNetDataset(HFDataset):
         self.class_to_idx = {}
         for idx, class_name in enumerate(self.dataset.info.features['label'].names):
             self.class_to_idx[class_name] = idx
-    
+
     def __getitem__(self, idx):
         try:
             item = self.dataset[idx]
@@ -202,7 +206,7 @@ class ImageNetDataset(HFDataset):
                 target = ""  # Handle missing labels
             else:
                 target = self.dataset.info.features['label'].int2str(target)
-            
+
             if isinstance(sample, Image.Image):
                 sample = sample.convert("RGB")
             if self.preprocess:
@@ -210,6 +214,7 @@ class ImageNetDataset(HFDataset):
             return sample, target
         except (UnicodeDecodeError, OSError, SyntaxError) as e:
             return None, None
+
 
 class CC3MDataset(HFDataset):
     """
@@ -222,15 +227,16 @@ class CC3MDataset(HFDataset):
         split (str): Dataset split to use ('train' or 'validation')
         download_full (bool): Whether to download the full dataset at once
     """
+
     def __init__(self, preprocess, split, download_full=False):
-        download_full=True
+        download_full = True
         super().__init__("pixparse/cc3m-wds", preprocess, split, download_full)
         # Hardcoded dataset sizes since they're not always available from the API
         if split == "train":
             self.len = 2905954
         else:
             self.len = 13443
-    
+
     def __getitem__(self, idx):
         """Return preprocessed image and caption pairs."""
         try:
@@ -238,12 +244,13 @@ class CC3MDataset(HFDataset):
             sample, target = item['jpg'], item['txt']
             if isinstance(sample, Image.Image):
                 sample = sample.convert("RGB")
-            
+
             if self.preprocess:
                 sample = self.preprocess(sample)
             return sample, target
         except (UnicodeDecodeError, OSError, SyntaxError) as e:
-            return None, None 
+            return None, None
+
 
 class KAGLDataset(HFDataset):
     """
@@ -255,6 +262,7 @@ class KAGLDataset(HFDataset):
         preprocess (callable): Image preprocessing function
         download_full (bool): Whether to download the full dataset at once
     """
+
     def __init__(self, preprocess, split, download_full=False):
         stream = not download_full
         stream = False
@@ -263,7 +271,6 @@ class KAGLDataset(HFDataset):
         base = load_dataset("Marqo/KAGL", split="data", streaming=stream, trust_remote_code=True)
         splits = base.train_test_split(test_size=0.1, seed=42)
         self.dataset = splits['train'] if split == 'train' else splits["test"]
-
 
     def __getitem__(self, idx):
         """Return preprocessed image and caption pairs."""
@@ -279,6 +286,7 @@ class KAGLDataset(HFDataset):
         except (UnicodeDecodeError, OSError, SyntaxError) as e:
             return None, None
 
+
 class EmbeddingExtractor:
     """
     Utility for extracting CLIP embeddings from images and text.
@@ -290,16 +298,17 @@ class EmbeddingExtractor:
         model_name (str): Name of the CLIP model variant to use
         device (str): Device to run inference on ('cuda' or 'cpu')
     """
+
     def __init__(self, model_name, device) -> None:
         self.model_name = model_name
         self.device = device
         # Load the model, preprocessor, and tokenizer
         self.model, self.preprocessor, self.tokenizer, self.token_max_length = self.load_model(
             model_name, self.device)
-        
+
         self.model = self.model.to(self.device)
         self.model.eval()
-    
+
     @staticmethod
     def load_model(model_name, device, model_path=None):
         """
@@ -318,24 +327,29 @@ class EmbeddingExtractor:
         """
         if model_name not in SUPPORTED_MODELS:
             raise ValueError(f"Model {model_name} not supported, please use one of {SUPPORTED_MODELS}")
-        
+
         # Replace '~' with '/' in model name (to handle command line limitations)
         model_name = model_name.replace("~", "/")
-        
+
         # Load the model and preprocessor
         if model_name == 'Fashion-CLIP':
             model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
-            preprocessor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+            processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+
+            def preprocess_image(img):
+                return processor(images=img, return_tensors="pt")["pixel_values"].squeeze(0)
+
+            preprocessor = preprocess_image
         else:
             model, preprocessor = clip.load(model_name, device=device, download_root=model_path)
-        
+
         # Create a tokenizer that truncates by default
         original_tokenizer = clip.tokenize
         tokenizer = lambda x: original_tokenizer(x, truncate=True)
         token_max_length = 77  # Standard context length for CLIP
-            
+
         return model, preprocessor, tokenizer, token_max_length
-    
+
     def embed_text(self, text):
         """
         Extract text embeddings using the CLIP model.
@@ -357,9 +371,9 @@ class EmbeddingExtractor:
         # Extract features with mixed precision
         with torch.no_grad(), torch.cuda.amp.autocast():
             text_features = self.model.encode_text(text_embeddings)
-            
+
         return text_features, text_embeddings.detach().cpu()
-    
+
     def embed_image(self, img):
         """
         Extract image embeddings using the CLIP model.
@@ -380,10 +394,10 @@ class EmbeddingExtractor:
         else:
             if not isinstance(img, torch.Tensor):
                 img = self.preprocessor(img)
-            
+
         if img.ndim == 3:
             img = img.unsqueeze(0)
-        
+
         try:
             img = img.to(self.device)
         except Exception as e:
@@ -392,9 +406,9 @@ class EmbeddingExtractor:
         # Extract features with mixed precision
         with torch.no_grad(), torch.cuda.amp.autocast():
             image_features = self.model.encode_image(img)
-            
+
         return image_features, img.detach().cpu()
-    
+
 
 def load_data(dataset, preprocess, train=False):
     """
@@ -418,15 +432,15 @@ def load_data(dataset, preprocess, train=False):
     elif dataset == "KAGL":
         dataset = KAGLDataset(preprocess, "train" if train else "validation")
     elif dataset == "celeba":
-        dataset = CelebAMy(download=True, split="train" if train else "test", 
-                          transform=preprocess, target_type="attr")
+        dataset = CelebAMy(download=True, split="train" if train else "test",
+                           transform=preprocess, target_type="attr")
     else:
         raise ValueError(f"Dataset {dataset} not supported, please use one of {SUPPORTED_DATASETS}")
 
     # Add reverse class mapping if available
     if hasattr(dataset, "class_to_idx"):
         dataset.idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
-    
+
     return dataset
 
 
@@ -446,9 +460,9 @@ def load_vocab(vocab, vocab_size=-1):
     """
     if vocab not in SUPPORTED_VOCABS.keys():
         raise ValueError(f"Vocab {vocab} not supported, please use one of {SUPPORTED_VOCABS.keys()}")
-    
+
     path = SUPPORTED_VOCABS[vocab]
-    
+
     # Handle composite vocabularies (e.g., "laion" = unigrams + bigrams)
     if isinstance(path, list):
         current_vocab = None
@@ -466,14 +480,15 @@ def load_vocab(vocab, vocab_size=-1):
         if vocab_size > 0:
             # Apply vocabulary size limit if specified
             if vocab_size > len(lines):
-                warnings.warn(f"Vocab size {vocab_size} is greater than the actual vocab size {len(lines)}. Using full vocab.")
+                warnings.warn(
+                    f"Vocab size {vocab_size} is greater than the actual vocab size {len(lines)}. Using full vocab.")
             else:
                 lines = lines[-vocab_size:]  # Take most frequent terms (assuming frequency-sorted lists)
 
         for line in lines:
             line = line.strip()
             vocab_data.append(line)
-    
+
     return VocabDataset(vocab_data)
 
 
@@ -482,17 +497,17 @@ def safe_collate(batch):
     batch = [(img, txt) for img, txt in batch if img is not None or txt is not None]
     if not batch:
         return None, None  # Handle empty batch case
-    
+
     # If any item is None, set it to None
     images, texts = zip(*batch)
     if any(x is None for x in images):
         images = None
     else:
         images = torch.stack(images)
-        
+
     if any(x is None for x in texts):
         texts = None
-        
+
     # Process valid items
     return images, texts
 
@@ -511,10 +526,10 @@ def main(args):
     logger.info(f"Extracting embeddings for {args.dataset} using {args.model} model")
     device = get_device()
     logger.info(f"Using device: {device}")
-    
+
     # Load CLIP model and embedding extractor
     extractor = EmbeddingExtractor(args.model, device)
-    
+
     # Load appropriate dataset
     if args.dataset in SUPPORTED_DATASETS:
         logger.info(f"Loading dataset {args.dataset}")
@@ -525,8 +540,9 @@ def main(args):
         dataset = load_vocab(args.dataset, args.vocab_size)
         split_name = str(args.vocab_size)
     else:
-        raise ValueError(f"Dataset {args.dataset} not supported, please use one of {SUPPORTED_DATASETS + list(SUPPORTED_VOCABS.keys())}")
-    
+        raise ValueError(
+            f"Dataset {args.dataset} not supported, please use one of {SUPPORTED_DATASETS + list(SUPPORTED_VOCABS.keys())}")
+
     with torch.no_grad(), torch.cuda.amp.autocast():
         # Get a sample to determine embedding dimension
         dataset_size = len(dataset)
@@ -540,156 +556,158 @@ def main(args):
         else:
             features, _ = extractor.embed_image(sample)
         embedding_dim = features.shape[-1]
-        
+
         logger.info(f"Creating embeddings Memmap with length {dataset_size} and shape {embedding_dim}")
-        
+
         # Prepare memory-mapped arrays for storing embeddings
         memmap_image_path = os.path.join(
-            "data", 
+            "data",
             f"{args.dataset}_{args.model}_{split_name}_image_{dataset_size}_{embedding_dim}.npy"
         )
         image_memmap = np.memmap(
-            memmap_image_path, 
-            dtype=np.float32, 
-            mode='w+', 
+            memmap_image_path,
+            dtype=np.float32,
+            mode='w+',
             shape=(dataset_size, embedding_dim)
         )
         logger.info(f"Saving image embeddings to {memmap_image_path}")
-        
+
         memmap_text_path = os.path.join(
-            "data", 
+            "data",
             f"{args.dataset}_{args.model}_{split_name}_text_{dataset_size}_{embedding_dim}.npy"
         )
         text_memmap = np.memmap(
-            memmap_text_path, 
-            dtype=np.float32, 
-            mode='w+', 
+            memmap_text_path,
+            dtype=np.float32,
+            mode='w+',
             shape=(dataset_size, embedding_dim)
         )
         logger.info(f"Saving text embeddings to {memmap_text_path}")
-        
+
         # Also save the original text for reference
         text_output_path = os.path.join(
-            "data", 
+            "data",
             f"{args.dataset}_{args.model}_{split_name}_text_{dataset_size}.txt"
         )
         logger.info(f"Saving original text to {text_output_path}")
-        
+
         # Process data in batches
         text_full = []
         dl = torch.utils.data.DataLoader(
-            dataset, 
-            batch_size=args.batch_size, 
+            dataset,
+            batch_size=args.batch_size,
             num_workers=args.workers,
-            pin_memory=True, 
+            pin_memory=True,
             drop_last=False,
             collate_fn=safe_collate
         )
-        
+
         logger.info("Extracting embeddings...")
         start_idx = 0
         successful_count = 0
         for images, texts in tqdm(dl, total=len(dl), desc="Extracting embeddings"):
             if images is None and texts is None:
                 continue
-            
+
             # Calculate batch indices
             end_idx = start_idx + len(images if images is not None else texts)
-            
+
             # Extract and save image embeddings
             if images is not None:
                 image_embeddings, _ = extractor.embed_image(images)
                 image_memmap[start_idx:end_idx] = image_embeddings.detach().cpu().numpy().astype(np.float32)
                 image_memmap.flush()
-            
+
             # Extract and save text embeddings
             if texts is not None:
-                
+
                 # Convert numerical class indices to text labels if needed
                 texts = list(texts)
                 if isinstance(texts, list) and isinstance(texts[0], int):
                     texts = [dataset.idx_to_class[x] for x in texts]
-                
+
                 text_embeddings, _ = extractor.embed_text(texts)
                 text_memmap[start_idx:end_idx] = text_embeddings.detach().cpu().numpy().astype(np.float32)
                 text_memmap.flush()
-            
+
                 # Collect original text
                 text_full.extend(texts)
-            
+
             # Update indices for next batch
             start_idx = end_idx
             successful_count += len(images if images is not None else texts)
-        
+
         # Save original text to file
         with open(text_output_path, 'w') as f:
             f.write("\n".join(text_full))
-        
+
         #Correct end index for memmap if needed
         if successful_count < dataset_size:
             logger.info(f"Resizing memmaps to {successful_count} items")
-            
+
             # Create new memmaps with correct size
             final_image_path = os.path.join(
-                "data", 
+                "data",
                 f"{args.dataset}_{args.model}_{split_name}_image_{successful_count}_{embedding_dim}.npy"
             )
             final_text_path = os.path.join(
-                "data", 
+                "data",
                 f"{args.dataset}_{args.model}_{split_name}_text_{successful_count}_{embedding_dim}.npy"
             )
-            
+
             # Copy data to new memmaps
             final_image_memmap = np.memmap(
-                final_image_path, 
-                dtype=np.float32, 
-                mode='w+', 
+                final_image_path,
+                dtype=np.float32,
+                mode='w+',
                 shape=(successful_count, embedding_dim)
             )
             final_image_memmap[:] = image_memmap[:successful_count]
             final_image_memmap.flush()
-            
+
             final_text_memmap = np.memmap(
-                final_text_path, 
-                dtype=np.float32, 
-                mode='w+', 
+                final_text_path,
+                dtype=np.float32,
+                mode='w+',
                 shape=(successful_count, embedding_dim)
             )
             final_text_memmap[:] = text_memmap[:successful_count]
             final_text_memmap.flush()
-            
+
             # Also update the text file
             final_text_output_path = os.path.join(
-                "data", 
+                "data",
                 f"{args.dataset}_{args.model}_{split_name}_text_{successful_count}.txt"
             )
             with open(final_text_output_path, 'w') as f:
                 f.write("\n".join(text_full))
-            
-            logger.info(f"Resized memmaps saved at {final_image_path} and {final_text_path} and text to {final_text_output_path}")
-                        
+
+            logger.info(
+                f"Resized memmaps saved at {final_image_path} and {final_text_path} and text to {final_text_output_path}")
+
             # Cleanup original files
             os.remove(memmap_image_path)
             os.remove(memmap_text_path)
             os.remove(text_output_path)
-            logger.info(f"Removed original memmaps and text file from {memmap_image_path}, {memmap_text_path}, and {text_output_path}")
-            
+            logger.info(
+                f"Removed original memmaps and text file from {memmap_image_path}, {memmap_text_path}, and {text_output_path}")
+
             memmap_image_path = final_image_path
             image_memmap = final_image_memmap
             memmap_text_path = final_text_path
             text_memmap = final_text_memmap
-            
+
         if image_memmap.sum() == 0:
             os.remove(memmap_image_path)
             logger.info(f"Removed empty memmap file {memmap_image_path}")
-        
+
         if text_memmap.sum() == 0:
             os.remove(memmap_text_path)
             logger.info(f"Removed empty memmap file {memmap_text_path}")
-        
+
         logger.info("Embedding extraction complete")
-        
-        
+
+
 if __name__ == "__main__":
     args = parse_args()
     main(args)
