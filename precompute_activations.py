@@ -267,10 +267,10 @@ class KAGLDataset(HFDataset):
         stream = not download_full
         stream = False
         self.preprocess = preprocess
-        self.len: int = 44434
         base = load_dataset("Marqo/KAGL", split="data", streaming=stream, trust_remote_code=True)
         splits = base.train_test_split(test_size=0.1, seed=42)
         self.dataset = splits['train'] if split == 'train' else splits["test"]
+        self.len = len(self.dataset)
 
     def __getitem__(self, idx):
         """Return preprocessed image and caption pairs."""
