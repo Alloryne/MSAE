@@ -654,14 +654,14 @@ def main(args):
                 text_memmap.flush()
                 text_full.extend(texts[: end_idx - start_idx])
 
-            start_idx = end_idx
             successful_count += (end_idx - start_idx)
+            start_idx = end_idx
 
         # Save original text to file
         with open(text_output_path, 'w') as f:
             f.write("\n".join(text_full))
 
-        #Correct end index for memmap if needed
+        # Correct end index for memmap if needed
         if successful_count < dataset_size:
             logger.info(f"Resizing memmaps to {successful_count} items")
 
