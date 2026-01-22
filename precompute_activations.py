@@ -630,7 +630,6 @@ def main(args):
 
             batch_size = len(images if images is not None else texts)
             end_idx = min(start_idx + batch_size, num_samples)
-            logger.info(start_idx, batch_size, end_idx)
 
             # ---- image embeddings ----
             if images is not None:
