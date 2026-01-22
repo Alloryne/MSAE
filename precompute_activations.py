@@ -8,7 +8,7 @@ from tqdm import tqdm
 from PIL import Image
 
 import clip
-from transformers import CLIPModel, CLIPProcessor
+from transformers import CLIPModel, CLIPProcessor, CLIPTokenizer
 from datasets import load_dataset
 from torch.utils.data import Dataset
 from torchvision.datasets import CelebA
@@ -341,7 +341,8 @@ class EmbeddingExtractor:
 
             preprocessor = preprocess_image
 
-            tokenizer = processor.text
+            tokenizer = CLIPTokenizer.from_pretrained("patrickjohncyh/fashion-clip")
+
         else:
             model, preprocessor = clip.load(model_name, device=device, download_root=model_path)
 
