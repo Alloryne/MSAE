@@ -363,18 +363,13 @@ class EmbeddingExtractor:
                 - tokenized_text: Tokenized text inputs
         """
         # Handle different input types
-        if text is None:
-            text = [""]
-
-        if isinstance(text, torch.Tensor):
-            text_embeddings = text.to(self.device)
+        if not isinstance(text, torch.Tensor):
+            text_embeddings = self.tokenizer(text if isinstance(text, list) else [text]).to(self.device)
         else:
-            if isinstance(text, str):
-                text = [text]
-            text = [t if isinstance(t, str) else "" for t in text]
-            text_embeddings = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(self.device)
+            text_embeddings = text.to(self.device)
 
-        with torch.no_grad():
+        # Extract features with mixed precision
+        with torch.no_grad(), torch.cuda.amp.autocast():
             text_features = self.model.get_text_features(
                 input_ids=text_embeddings["input_ids"],
                 attention_mask=text_embeddings["attention_mask"]
