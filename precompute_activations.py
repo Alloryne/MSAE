@@ -340,12 +340,14 @@ class EmbeddingExtractor:
                 return processor(images=img, return_tensors="pt")["pixel_values"].squeeze(0)
 
             preprocessor = preprocess_image
+
+            tokenizer = processor.text
         else:
             model, preprocessor = clip.load(model_name, device=device, download_root=model_path)
 
-        # Create a tokenizer that truncates by default
-        original_tokenizer = clip.tokenize
-        tokenizer = lambda x: original_tokenizer(x, truncate=True)
+            #    Create a tokenizer that truncates by default
+            original_tokenizer = clip.tokenize
+            tokenizer = lambda x: original_tokenizer(x, truncate=True)
         token_max_length = 77  # Standard context length for CLIP
 
         return model, preprocessor, tokenizer, token_max_length
@@ -364,7 +366,9 @@ class EmbeddingExtractor:
         """
         # Handle different input types
         if not isinstance(text, torch.Tensor):
-            text_embeddings = self.tokenizer(text if isinstance(text, list) else [text]).to(self.device)
+            text_embeddings = self.tokenizer(
+                text, padding=True, truncation=True, return_tensors="pt"
+            ).to(self.device)
         else:
             text_embeddings = text.to(self.device)
 
