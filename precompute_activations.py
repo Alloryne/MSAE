@@ -380,7 +380,7 @@ class EmbeddingExtractor:
                 attention_mask=text_embeddings["attention_mask"]
             )
 
-        return text_features, text_embeddings.detach().cpu()
+        return text_features, text_embeddings
 
     def embed_image(self, img):
         """
