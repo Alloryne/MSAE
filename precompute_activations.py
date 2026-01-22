@@ -674,14 +674,17 @@ def main(args):
             )
 
             # Copy data to new memmaps
-            final_image_memmap = np.memmap(
-                final_image_path,
-                dtype=np.float32,
-                mode='w+',
-                shape=(successful_count, embedding_dim)
-            )
-            final_image_memmap[:] = image_memmap[:successful_count]
-            final_image_memmap.flush()
+            if successful_count > 0:
+                final_image_memmap = np.memmap(
+                    final_image_path,
+                    dtype=np.float32,
+                    mode='w+',
+                    shape=(successful_count, embedding_dim)
+                )
+                final_image_memmap[:] = image_memmap[:successful_count]
+                final_image_memmap.flush()
+            else:
+                print(f"No successful embeddings to save for {final_image_path}")
 
             final_text_memmap = np.memmap(
                 final_text_path,
