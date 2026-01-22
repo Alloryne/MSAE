@@ -630,9 +630,11 @@ def main(args):
 
             batch_size = len(images if images is not None else texts)
             end_idx = min(start_idx + batch_size, num_samples)
+            logger.info(start_idx, batch_size, end_idx)
 
             # ---- image embeddings ----
             if images is not None:
+                logger.info("Extracting image embeddings...")
                 image_embeddings, _ = extractor.embed_image(images[: end_idx - start_idx])
                 image_memmap[start_idx:end_idx] = (
                     image_embeddings.detach().cpu().numpy().astype(np.float32)
@@ -641,6 +643,7 @@ def main(args):
 
             # ---- text embeddings ----
             if texts is not None:
+                logger.info("Extracting text embeddings...")
                 texts = list(texts)
                 if isinstance(texts[0], int):
                     texts = [dataset.idx_to_class[x] for x in texts]
@@ -674,17 +677,14 @@ def main(args):
             )
 
             # Copy data to new memmaps
-            if successful_count > 0:
-                final_image_memmap = np.memmap(
-                    final_image_path,
-                    dtype=np.float32,
-                    mode='w+',
-                    shape=(successful_count, embedding_dim)
-                )
-                final_image_memmap[:] = image_memmap[:successful_count]
-                final_image_memmap.flush()
-            else:
-                print(f"No successful embeddings to save for {final_image_path}")
+            final_image_memmap = np.memmap(
+                final_image_path,
+                dtype=np.float32,
+                mode='w+',
+                shape=(successful_count, embedding_dim)
+            )
+            final_image_memmap[:] = image_memmap[:successful_count]
+            final_image_memmap.flush()
 
             final_text_memmap = np.memmap(
                 final_text_path,
