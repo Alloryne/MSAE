@@ -129,6 +129,7 @@ def compute_similarities(
      
     with torch.no_grad():
         for batch_data in tqdm(dataloader, desc="Computing similarities", unit="batch"):
+            batch = batch.to(model.device)
             # In the paper we used `input_processed, _ = model.model.preprocess(batch_data.to(device))`
             # However due to not perfect reconstruction of the model, we simply use the CLIP text 
             # Compute similarity
