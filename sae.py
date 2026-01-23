@@ -836,9 +836,20 @@ class SAE(nn.Module):
         """
         super().__init__()
         self.model, mean, scaling_factor, _ = load_model(path)
-        self.register_buffer("mean", mean.clone().detach() if isinstance(mean, torch.Tensor) else torch.tensor(mean))   
-        self.register_buffer("scaling_factor", torch.tensor(scaling_factor)) 
-    
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(device)  # move model to device
+
+        # register buffers on the same device
+        self.register_buffer(
+            "mean",
+            mean.clone().detach().to(device) if isinstance(mean, torch.Tensor) else torch.tensor(mean, device=device)
+        )
+        self.register_buffer(
+            "scaling_factor",
+            torch.tensor(scaling_factor, device=device)
+        )
+
     @property
     def input_dim(self) -> int:
         """Return input dimension of the model."""
@@ -860,6 +871,7 @@ class SAE(nn.Module):
             Preprocessed tensor
         """
         # Mean-center and scale the input
+
         x = (x - self.mean) * self.scaling_factor
         return x
     

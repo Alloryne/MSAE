@@ -97,44 +97,50 @@ You can now train the model by specifying the training and validation datasets, 
 
 ```bash
 # Trained on CC3M with ViT-B~16, 20 epochs, expansion factor 32 (512*32), ReLU SAE with sparsity regularization 0.01
-python -dt cc3m_ViT-B~16_train_image_2905936_512.npy \
+python train.py \ 
+       -dt cc3m_ViT-B~16_train_image_2905936_512.npy \
        -ds imagenet_ViT-B~16_train_image_1281166_512.npy \
        -dm cc3m_ViT-B~16_validation_text_13443_512.npy \
        --expansion_factor 32 --epochs 20 -m ReLUSAE -a ReLU_01
 
 # Trained on CC3M with ViT-L~14, 30 epochs, expansion factor 16 (768*16), TopK SAE with k=64
-python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+python train.py \
+       -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
        --expansion_factor 16 --epochs 30 -m TopKSAE -a TopKReLU_64
 
 # Trained on CC3M with ViT-L~14, 30 epochs, expansion factor 8 (768*8), BatchTopK SAE with k=32
-python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+python train.py \
+       -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
        --expansion_factor 8 --epochs 30 -m BatchTopKSAE -a BatchTopKReLU_32
 
 # Trained on CC3M with ViT-L~14, 30 epochs, expansion factor 8 (768*8), Matryoshka SAE (RW)
-python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+python train.py \
+       -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
        --expansion_factor 8 --epochs 30 MSAE_RW -a ""
 
 # Trained on CC3M with ViT-L~14, 30 epochs, expansion factor 8 (768*8), Matryoshka SAE (UW)
-python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+python train.py \
+       -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
        --expansion_factor 8 --epochs 30 MSAE_UW -a ""
 ```
 
 ```bash
-python -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
+python train.py \
+       -dt cc3m_ViT-L~14_train_image_2905936_768.npy \
        -ds imagenet_ViT-L~14_train_image_1281166_768.npy \
        -dm cc3m_ViT-L~14_validation_text_13443_768.npy \
        --expansion_factor 8 --epochs 30 MSAE_UW -a ""
 ```
 
-**NOTE**: Models trained for our paper can be downloaded from this huggingface repository: [Matryoshka SAE Models](https://huggingface.co/WolodjaZ/MSAE).
+**NOTE**: Models trained for our paper can be downloaded from this huggingface repository: [Matryoshka SAE Models](htthoweuploaduppppp       dfasfdasdfklmkmkps://huggingface.co/WolodjaZ/MSAE).
 
 **🚨IMPORTANT🚨**: The models hosted on Hugging Face have been retrained without the mentioned bug. Consequently, the results may differ from the paper.
 
