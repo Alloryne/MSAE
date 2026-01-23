@@ -119,6 +119,9 @@ def compute_similarities(
     # Get decoder search space (the learned feature vectors)
     decoded_search_space = model.model.decoder.data + model.model.pre_bias
     decoded_search_space = model.postprocess(decoded_search_space)
+
+    decoded_search_space = decoded_search_space.to(model.model.device)
+
     if patch_diff:
         zero_space = model.decode(torch.zeros(1,model.latent_dim, dtype=decoded_search_space.dtype, device=decoded_search_space.device))
         decoded_search_space -= zero_space
@@ -129,7 +132,7 @@ def compute_similarities(
      
     with torch.no_grad():
         for batch_data in tqdm(dataloader, desc="Computing similarities", unit="batch"):
-            batch = batch.to(model.device)
+            batch_data = batch_data.to(decoded_search_space.device)
             # In the paper we used `input_processed, _ = model.model.preprocess(batch_data.to(device))`
             # However due to not perfect reconstruction of the model, we simply use the CLIP text 
             # Compute similarity
