@@ -119,8 +119,9 @@ def compute_similarities(
     # Get decoder search space (the learned feature vectors)
     decoded_search_space = model.model.decoder.data + model.model.pre_bias
     decoded_search_space = model.postprocess(decoded_search_space)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    decoded_search_space = decoded_search_space.to(model.device)
+    decoded_search_space = decoded_search_space.to(device)
 
     if patch_diff:
         zero_space = model.decode(torch.zeros(1,model.latent_dim, dtype=decoded_search_space.dtype, device=decoded_search_space.device))
